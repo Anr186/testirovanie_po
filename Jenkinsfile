@@ -100,11 +100,11 @@ pipeline {
                     echo "=== Запуск Web UI тестов ==="
                     
                     sh '''
-                        cd ${WORKSPACE}/web_ui_tests
+                        cd ${WORKSPACE}/tests
                         
                         pip3 install -r ${WORKSPACE}/requirements.txt --break-system-packages || true
                         
-                        pytest web_ui_tests.py \
+                        pytest tests_openbmc.py \
                             --html=${WORKSPACE}/artifacts/web_ui_tests/report.html \
                             --self-contained-html \
                             --junitxml=${WORKSPACE}/artifacts/web_ui_tests/junit.xml \
@@ -115,8 +115,8 @@ pipeline {
             post {
                 always {
                     sh '''
-                        if [ -f ${WORKSPACE}/web_ui_tests/*.png ]; then
-                            cp ${WORKSPACE}/web_ui_tests/*.png ${WORKSPACE}/artifacts/web_ui_tests/ || true
+                        if [ -f ${WORKSPACE}/tests/*.png ]; then
+                            cp ${WORKSPACE}/tests/*.png ${WORKSPACE}/artifacts/web_ui_tests/ || true
                         fi
                     '''
                 }
@@ -129,13 +129,13 @@ pipeline {
                     echo "=== Запуск Redfish API тестов ==="
                     
                     sh '''
-                        cd ${WORKSPACE}/redfish_api_tests
+                        cd ${WORKSPACE}/tests
                         
                         echo "Запуск Redfish API тестов..."
                         
                         pip3 install -r ${WORKSPACE}/requirements.txt --break-system-packages || true
                         
-                        pytest Redfish_API_tests.py \
+                        pytest test_redfish.py \
                             --html=${WORKSPACE}/artifacts/redfish_tests/report.html \
                             --self-contained-html \
                             --junitxml=${WORKSPACE}/artifacts/redfish_tests/junit.xml \
@@ -151,13 +151,13 @@ pipeline {
                     echo "=== Запуск нагрузочного тестирования ==="
                     
                     sh '''
-                        cd ${WORKSPACE}/load_tests
+                        cd ${WORKSPACE}/tests
                         
                         echo "Запуск нагрузочного тестирования..."
                         
                         pip3 install -r ${WORKSPACE}/requirements.txt --break-system-packages || true
                         
-                        locust -f Locust.py \
+                        locust -f locustfile.py \
                             --host=https://localhost:2443 \
                             --users=5 \
                             --spawn-rate=1 \
