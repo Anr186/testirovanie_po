@@ -4,15 +4,14 @@
 lab7/
 ├── docker-compose.yml          
 ├── Jenkinsfile                 
-├── requirements.txt            
+├── requirements.txt    
+├── artifacts        
 ├── tests/            
 │   ├── locustfile.py
 │   ├── test_redfish.py
 │   └── tests_openbmc.py
 ├── romulus/                   
-│   └── obmc-phosphor-image-romulus-20250902012112.static.mtd
-└── chromedriver/              
-    └── chromedriver
+    └── obmc-phosphor-image-romulus-20250902012112.static.mtd
 ```
 
 ## Запуск
