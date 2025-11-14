@@ -12,10 +12,8 @@ services:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
       - ./romulus:/var/jenkins_home/workspace/romulus
-      - ./web_ui_tests:/var/jenkins_home/workspace/web_ui_tests
-      - ./redfish_api_tests:/var/jenkins_home/workspace/redfish_api_tests
-      - ./load_tests:/var/jenkins_home/workspace/load_tests
-      - ./chromedriver:/var/jenkins_home/workspace/chromedriver
+      - ./tests:/var/jenkins_home/workspace/tests
+      - ./artifacts:/var/jenkins_home/workspace/artifacts
       - ./jenkins_ssh:/var/jenkins_home/.ssh
     environment:
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
@@ -43,10 +41,7 @@ services:
         
         mkdir -p /var/jenkins_home/plugins &&
         
-        mkdir -p /var/jenkins_home/workspace/artifacts/web_ui_tests &&
-        mkdir -p /var/jenkins_home/workspace/artifacts/redfish_tests &&
-        mkdir -p /var/jenkins_home/workspace/artifacts/load_tests &&
-        mkdir -p /var/jenkins_home/workspace/artifacts/qemu_logs &&
+        mkdir -p /var/jenkins_home/workspace/artifacts &&
         
         /usr/local/bin/jenkins.sh
       "
