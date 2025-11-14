@@ -16,10 +16,8 @@ pipeline {
                     echo "=== Подготовка окружения ==="
                     
                     sh '''
-                        mkdir -p ${WORKSPACE}/artifacts/web_ui_tests
-                        mkdir -p ${WORKSPACE}/artifacts/redfish_tests
-                        mkdir -p ${WORKSPACE}/artifacts/load_tests
-                        mkdir -p ${WORKSPACE}/artifacts/qemu_logs
+                        # Создаем единую папку для всех артефактов
+                        mkdir -p ${WORKSPACE}/artifacts
                     '''
                     
                     echo "Окружение подготовлено"
@@ -87,7 +85,7 @@ pipeline {
                 always {
                     sh '''
                         if [ -f /tmp/qemu.log ]; then
-                            cp /tmp/qemu.log ${WORKSPACE}/artifacts/qemu_logs/qemu_startup.log
+                            cp /tmp/qemu.log ${WORKSPACE}/artifacts/qemu_startup.log
                         fi
                     '''
                 }
@@ -105,9 +103,9 @@ pipeline {
                         pip3 install -r ${WORKSPACE}/requirements.txt --break-system-packages || true
                         
                         pytest tests_openbmc.py \
-                            --html=${WORKSPACE}/artifacts/web_ui_tests/report.html \
+                            --html=${WORKSPACE}/artifacts/web_ui_report.html \
                             --self-contained-html \
-                            --junitxml=${WORKSPACE}/artifacts/web_ui_tests/junit.xml \
+                            --junitxml=${WORKSPACE}/artifacts/web_ui_junit.xml \
                             -v --tb=short
                     '''
                 }
@@ -115,8 +113,9 @@ pipeline {
             post {
                 always {
                     sh '''
-                        if [ -f ${WORKSPACE}/tests/*.png ]; then
-                            cp ${WORKSPACE}/tests/*.png ${WORKSPACE}/artifacts/web_ui_tests/ || true
+                        # Копируем скриншоты если есть
+                        if ls ${WORKSPACE}/tests/*.png 1> /dev/null 2>&1; then
+                            cp ${WORKSPACE}/tests/*.png ${WORKSPACE}/artifacts/ || true
                         fi
                     '''
                 }
@@ -136,9 +135,9 @@ pipeline {
                         pip3 install -r ${WORKSPACE}/requirements.txt --break-system-packages || true
                         
                         pytest test_redfish.py \
-                            --html=${WORKSPACE}/artifacts/redfish_tests/report.html \
+                            --html=${WORKSPACE}/artifacts/redfish_report.html \
                             --self-contained-html \
-                            --junitxml=${WORKSPACE}/artifacts/redfish_tests/junit.xml \
+                            --junitxml=${WORKSPACE}/artifacts/redfish_junit.xml \
                             -v --tb=short
                     '''
                 }
@@ -157,14 +156,15 @@ pipeline {
                         
                         pip3 install -r ${WORKSPACE}/requirements.txt --break-system-packages || true
                         
+                        # Используем || true чтобы игнорировать ошибки Locust
                         locust -f locustfile.py \
                             --host=https://localhost:2443 \
                             --users=5 \
                             --spawn-rate=1 \
                             --run-time=30s \
                             --headless \
-                            --html=${WORKSPACE}/artifacts/load_tests/locust_report.html \
-                            --csv=${WORKSPACE}/artifacts/load_tests/locust_stats
+                            --html=${WORKSPACE}/artifacts/locust_report.html \
+                            --csv=${WORKSPACE}/artifacts/locust_stats || true
                     '''
                 }
             }
@@ -177,20 +177,33 @@ pipeline {
                     
                     sh '''
                         cat > ${WORKSPACE}/artifacts/test_summary.md << EOF
+# Отчет по тестированию OpenBMC
 
+## Общая информация
 - Начало: $(date -d @${BUILD_TIMESTAMP} '+%Y-%m-%d %H:%M:%S')
 - Окончание: $(date '+%Y-%m-%d %H:%M:%S')
+- Длительность: ${currentBuild.durationString}
 
-- Отчет: [report.html](web_ui_tests/report.html)
-- JUnit: [junit.xml](web_ui_tests/junit.xml)
+## Результаты тестов
 
-- Отчет: [report.html](redfish_tests/report.html)
-- JUnit: [junit.xml](redfish_tests/junit.xml)
+### Web UI Тесты
+- HTML отчет: [web_ui_report.html](web_ui_report.html)
+- JUnit отчет: [web_ui_junit.xml](web_ui_junit.xml)
 
-- Отчет: [locust_report.html](load_tests/locust_report.html)
-- CSV данные: [locust_stats.csv](load_tests/locust_stats.csv)
+### Redfish API Тесты  
+- HTML отчет: [redfish_report.html](redfish_report.html)
+- JUnit отчет: [redfish_junit.xml](redfish_junit.xml)
 
-- [qemu_startup.log](qemu_logs/qemu_startup.log)
+### Нагрузочное тестирование
+- HTML отчет: [locust_report.html](locust_report.html)
+- CSV данные: [locust_stats_requests.csv](locust_stats_requests.csv)
+
+### Логи системы
+- Логи QEMU: [qemu_startup.log](qemu_startup.log)
+
+## Статус сборки
+- **Сборка №**: ${BUILD_NUMBER}
+- **Статус**: ${currentBuild.result}
 
 EOF
                     '''
@@ -212,6 +225,7 @@ EOF
                 '''
             }
             
+            // Публикация HTML отчета
             publishHTML([
                 allowMissing: false,
                 alwaysLinkToLastBuild: true,
@@ -221,7 +235,11 @@ EOF
                 reportName: 'OpenBMC Test Report'
             ])
             
-            junit testResults: 'artifacts/**/junit.xml', allowEmptyResults: true
+            // Публикация JUnit результатов
+            junit testResults: 'artifacts/*.xml', allowEmptyResults: true
+            
+            // Архивирование всех артефактов
+            archiveArtifacts artifacts: 'artifacts/**/*', fingerprint: true
         }
         
         success {

@@ -51,22 +51,22 @@ class OpenBMCUser(HttpUser):
             else:
                 response.failure(f"HTTP {response.status_code}")
 
-class JSONPlaceholderUser(HttpUser):
-    host = "https://jsonplaceholder.typicode.com"
-    wait_time = between(1, 3)
+# class JSONPlaceholderUser(HttpUser):
+#     host = "https://jsonplaceholder.typicode.com"
+#     wait_time = between(1, 3)
 
-    @task(4)
-    def get_posts(self):
-        with self.client.get(
-                "/posts",
-                catch_response=True,
-                name="Get All Posts"
-        ) as response:
-            if response.status_code == 200:
-                    posts = response.json()
-                    if len(posts) > 10: 
-                        response.success()
-                    else:
-                        response.failure("Недостаточно постов")
-            else:
-                response.failure(f"HTTP {response.status_code}")
+#     @task(4)
+#     def get_posts(self):
+#         with self.client.get(
+#                 "/posts",
+#                 catch_response=True,
+#                 name="Get All Posts"
+#         ) as response:
+#             if response.status_code == 200:
+#                     posts = response.json()
+#                     if len(posts) > 10: 
+#                         response.success()
+#                     else:
+#                         response.failure("Недостаточно постов")
+#             else:
+#                 response.failure(f"HTTP {response.status_code}")
